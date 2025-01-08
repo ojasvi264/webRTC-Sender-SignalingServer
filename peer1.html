@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebRTC Peer 1</title>
+</head>
+<body>
+  <h2>Peer 1</h2>
+  <video id="video1" autoplay playsinline></video>
+  <button onclick="startCall()">Start Call</button>
+
+  <script>
+    const signalingServer = new WebSocket('ws://localhost:8080');
+    let localConnection;
+    let remoteConnection;
+    let localStream;
+    let remoteStream;
+    
+    signalingServer.onmessage = (message) => {
+      const data = JSON.parse(message.data);
+      
+      if (data.offer) {
+        handleOffer(data.offer);
+      } else if (data.answer) {
+        handleAnswer(data.answer);
+      } else if (data.iceCandidate) {
+        handleICECandidate(data.iceCandidate);
+      }
+    };
+    
+    async function startCall() {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      document.getElementById('video1').srcObject = localStream;
+
+      localConnection = new RTCPeerConnection();
+      localStream.getTracks().forEach(track => localConnection.addTrack(track, localStream));
+
+      localConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          signalingServer.send(JSON.stringify({ iceCandidate: event.candidate }));
+        }
+      };
+
+      const offer = await localConnection.createOffer();
+      await localConnection.setLocalDescription(offer);
+      signalingServer.send(JSON.stringify({ offer: offer }));
+    }
+
+    async function handleOffer(offer) {
+      localConnection = new RTCPeerConnection();
+      localStream.getTracks().forEach(track => localConnection.addTrack(track, localStream));
+
+      localConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          signalingServer.send(JSON.stringify({ iceCandidate: event.candidate }));
+        }
+      };
+
+      await localConnection.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await localConnection.createAnswer();
+      await localConnection.setLocalDescription(answer);
+      signalingServer.send(JSON.stringify({ answer: answer }));
+    }
+
+    function handleAnswer(answer) {
+      localConnection.setRemoteDescription(new RTCSessionDescription(answer));
+    }
+
+    function handleICECandidate(iceCandidate) {
+      localConnection.addIceCandidate(new RTCIceCandidate(iceCandidate));
+    }
+  </script>
+</body>
+</html>
