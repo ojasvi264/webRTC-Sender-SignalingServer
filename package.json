@@ -12,5 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
   }
 }
