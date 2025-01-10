@@ -4,70 +4,142 @@
   <title>WebRTC Peer 1</title>
 </head>
 <body>
-  <h2>Peer 1</h2>
-  <video id="video1" autoplay playsinline></video>
-  <button onclick="startCall()">Start Call</button>
+<h2>Peer 1</h2>
+<video id="video1" autoplay playsinline></video>
+<button onclick="startCall()">Start Call</button>
 
-  <script>
-    const signalingServer = new WebSocket('ws://localhost:8080');
-    let localConnection;
-    let remoteConnection;
-    let localStream;
-    let remoteStream;
-    
-    signalingServer.onmessage = (message) => {
-      const data = JSON.parse(message.data);
-      
-      if (data.offer) {
-        handleOffer(data.offer);
-      } else if (data.answer) {
-        handleAnswer(data.answer);
-      } else if (data.iceCandidate) {
-        handleICECandidate(data.iceCandidate);
-      }
-    };
-    
-    async function startCall() {
+<script>
+  const signalingServer = new WebSocket('ws://localhost:8080');
+  let localConnection;
+  let localStream;
+
+  signalingServer.onopen = () => {
+    console.log("Connected to signaling server.");
+  };
+
+  signalingServer.onmessage = (message) => {
+    const data = JSON.parse(message.data);
+    console.log("Received signaling message:", data);
+
+    if (data.offer) {
+      handleOffer(data.offer);
+    } else if (data.answer) {
+      handleAnswer(data.answer);
+    } else if (data.iceCandidate) {
+      handleICECandidate(data.iceCandidate);
+    }
+  };
+
+  signalingServer.onerror = (error) => {
+    console.error("Signaling server error:", error);
+  };
+
+  signalingServer.onclose = () => {
+    console.log("Signaling server connection closed.");
+  };
+
+  async function startCall() {
+    console.log("Starting call...");
+    try {
+      // Get local media stream
       localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       document.getElementById('video1').srcObject = localStream;
+      console.log("Local stream obtained:", localStream);
 
+      // Create RTCPeerConnection
       localConnection = new RTCPeerConnection();
-      localStream.getTracks().forEach(track => localConnection.addTrack(track, localStream));
+      console.log("RTCPeerConnection created.");
 
+      // Add local tracks to the connection
+      localStream.getTracks().forEach(track => {
+        localConnection.addTrack(track, localStream);
+        console.log("Added track to connection:", track);
+      });
+
+      // Handle ICE candidate events
       localConnection.onicecandidate = (event) => {
         if (event.candidate) {
+          console.log("ICE candidate generated:", event.candidate);
           signalingServer.send(JSON.stringify({ iceCandidate: event.candidate }));
         }
       };
 
+      localConnection.oniceconnectionstatechange = () => {
+        console.log("ICE connection state changed:", localConnection.iceConnectionState);
+      };
+
+      // Create and send SDP offer
       const offer = await localConnection.createOffer();
+      console.log("SDP offer created:", offer);
       await localConnection.setLocalDescription(offer);
+      console.log("Local description set with offer.");
       signalingServer.send(JSON.stringify({ offer: offer }));
+    } catch (error) {
+      console.error("Error during call setup:", error);
     }
+  }
 
-    async function handleOffer(offer) {
-      localConnection = new RTCPeerConnection();
-      localStream.getTracks().forEach(track => localConnection.addTrack(track, localStream));
+  async function handleOffer(offer) {
+    console.log("Received SDP offer:", offer);
+    try {
+      // Create RTCPeerConnection if not already created
+      if (!localConnection) {
+        localConnection = new RTCPeerConnection();
+        console.log("RTCPeerConnection created for handling offer.");
+      }
 
+      // Add local tracks to the connection
+      localStream.getTracks().forEach(track => {
+        localConnection.addTrack(track, localStream);
+        console.log("Added track to connection for handling offer:", track);
+      });
+
+      // Handle ICE candidate events
       localConnection.onicecandidate = (event) => {
         if (event.candidate) {
+          console.log("ICE candidate generated while handling offer:", event.candidate);
           signalingServer.send(JSON.stringify({ iceCandidate: event.candidate }));
         }
       };
 
+      localConnection.oniceconnectionstatechange = () => {
+        console.log("ICE connection state changed while handling offer:", localConnection.iceConnectionState);
+      };
+
+      // Set remote description with the received offer
       await localConnection.setRemoteDescription(new RTCSessionDescription(offer));
+      console.log("Remote description set with offer.");
+
+      // Create and send SDP answer
       const answer = await localConnection.createAnswer();
+      console.log("SDP answer created:", answer);
       await localConnection.setLocalDescription(answer);
+      console.log("Local description set with answer.");
       signalingServer.send(JSON.stringify({ answer: answer }));
+    } catch (error) {
+      console.error("Error while handling offer:", error);
     }
+  }
 
-    function handleAnswer(answer) {
+  function handleAnswer(answer) {
+    console.log("Received SDP answer:", answer);
+    try {
       localConnection.setRemoteDescription(new RTCSessionDescription(answer));
+      console.log("Remote description set with answer.");
+    } catch (error) {
+      console.error("Error while handling answer:", error);
     }
+  }
 
-    function handleICECandidate(iceCandidate) {
+  function handleICECandidate(iceCandidate) {
+    console.log("Received ICE candidate:", iceCandidate);
+    try {
       localConnection.addIceCandidate(new RTCIceCandidate(iceCandidate));
+      console.log("ICE candidate added to connection.");
+    } catch (error) {
+      console.error("Error while adding ICE candidate:", error);
     }
-  </script>
+  }
+</script>
 </body>
 </html>
