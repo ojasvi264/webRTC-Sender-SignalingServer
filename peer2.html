@@ -2,10 +2,17 @@
 <html>
 <head>
   <title>WebRTC Peer 2</title>
+  <style>
+    #video2 {
+      width: 100%;     /* Set dimensions or let it adapt to the content */
+      height: 100%;
+    }
+  </style>
 </head>
 <body>
 <h2>Peer 2</h2>
-<video id="video2" autoplay playsinline></video>
+<button id="playButton">Play Video</button>
+<video id="video2" autoplay playsinline muted></video>
 
 <script>
   const signalingServer = new WebSocket('ws://localhost:8080');
@@ -44,13 +51,50 @@
       };
 
       // Handle the remote stream (received from Peer 1)
+      let onTrackHandlerSet = false;  // Flag to track if the handler has been added
+
+      // Inside the ontrack handler
       localConnection.ontrack = (event) => {
+        if (onTrackHandlerSet) {
+          return; // Prevent adding the handler again
+        }
+        onTrackHandlerSet = true; // Set the flag
+
         console.log("Received remote stream from Peer 1.");
         const remoteStream = event.streams[0];
-        console.log(remoteStream);
-        document.getElementById('video2').srcObject = remoteStream;
-        console.log("Displaying remote stream in Peer 2's video element.");
+
+        const videoTracks = remoteStream.getVideoTracks();
+        if (videoTracks.length === 0) {
+          console.error("No video track found in the remote stream.");
+        } else {
+          console.log("Video track found:", videoTracks[0]);
+        }
+
+        const videoElement = document.getElementById('video2')  ;
+
+        // Check if remote stream exists
+        if (!remoteStream) {
+          console.error("No remote stream received.");
+          return;
+        }
+
+        // Assign remote stream to video element
+        videoElement.srcObject = remoteStream;
+        console.log("Assigned remote stream to video element.");
+
+        // Add click event to play video only once
+        const playButton = document.getElementById('playButton');
+        if (!playButton.hasEventListener) { // Ensure we only add the listener once
+          playButton.addEventListener('click', () => {
+            console.log("Play button clicked, attempting to play video.");
+            videoElement.play().catch((error) => {
+              console.error("Error playing video on Peer 2:", error);
+            });
+          });
+          playButton.hasEventListener = true; // Flag to prevent adding the listener multiple times
+        }
       };
+
 
       // Set the remote description with the received SDP offer
       await localConnection.setRemoteDescription(new RTCSessionDescription(offer));
