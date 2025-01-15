@@ -52,6 +52,7 @@
 
       // Add local tracks to the connection
       localStream.getTracks().forEach(track => {
+        console.log(`${track.kind} track state: ${track.readyState}, enabled: ${track.enabled}`);
         localConnection.addTrack(track, localStream);
         console.log("Added track to connection:", track);
       });
