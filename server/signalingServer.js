@@ -39,6 +39,28 @@ wss.on('connection', (ws) => {
           peer1Socket.send(JSON.stringify(parsedMessage));
           console.log("Sent SDP offer to peer1:", parsedMessage);
         }
+      } else if (parsedMessage.answer) {
+        // Handle answer message
+        if (ws === peer1Socket) {
+          console.log("Received answer from Peer1, sending to Peer2");
+          peer2Socket.send(JSON.stringify(parsedMessage));
+          console.log("Sent SDP answer to Peer2:", parsedMessage);
+        } else if (ws === peer2Socket) {
+          console.log("Received answer from Peer2, sending to Peer1");
+          peer1Socket.send(JSON.stringify(parsedMessage));
+          console.log("Sent SDP answer to Peer1:", parsedMessage);
+        }
+      } else if (parsedMessage.iceCandidate) {
+        // Handle ICE Candidate message
+        if (ws === peer1Socket) {
+          console.log("Received ICE Candidate from Peer1, sending to Peer2");
+          peer2Socket.send(JSON.stringify(parsedMessage));
+          console.log("Sent ICE Candidate to Peer2:", parsedMessage);
+        } else if (ws === peer2Socket) {
+          console.log("Received ICE Candidate from Peer2, sending to Peer1");
+          peer1Socket.send(JSON.stringify(parsedMessage));
+          console.log("Sent ICE Candidate to Peer1:", parsedMessage);
+        }
       }
     } catch (error) {
       console.error('Error parsing message:', error);
