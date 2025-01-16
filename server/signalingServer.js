@@ -27,7 +27,7 @@
         if (parsedMessage.offer) {
           // If a sender sends an offer, forward it to the receiver
           if (ws !== receiverSocket) {
-            console.log("Forwarding offer to receiver:", parsedMessage);
+            console.log("Forwarding offer to receiver:");
             receiverSocket.send(JSON.stringify({ offer: parsedMessage.offer, senderId: senders.indexOf(ws) }));
           }
         }
@@ -37,22 +37,29 @@
           if (ws === receiverSocket) {
             const senderSocket = senders[parsedMessage.senderId];
             if (senderSocket) {
-              console.log("Forwarding answer to sender:", parsedMessage);
+              console.log("Forwarding answer to sender:", parsedMessage.senderId);
               senderSocket.send(JSON.stringify({ answer: parsedMessage.answer }));
             }
           }
         }
 
         if (parsedMessage.iceCandidate) {
-          // Forward ICE candidates from any peer to the appropriate peer
+          // If the receiver sends an ICE candidate, forward it to the corresponding sender
           if (ws === receiverSocket) {
-            senders.forEach((senderSocket) => {
+            const senderSocket = senders[parsedMessage.senderId];
+            if (senderSocket) {
+              console.log("Forwarding ICE candidate to sender:", parsedMessage.senderId);
               senderSocket.send(JSON.stringify({ iceCandidate: parsedMessage.iceCandidate }));
-            });
+            }
           } else {
-            receiverSocket.send(JSON.stringify({ iceCandidate: parsedMessage.iceCandidate }));
+            // If it's from the sender, forward it to the receiver
+            if (receiverSocket) {
+              console.log("Forwarding ICE candidate to receiver");
+              receiverSocket.send(JSON.stringify({ iceCandidate: parsedMessage.iceCandidate }));
+            }
           }
         }
+
       } catch (error) {
         console.error('Error parsing message:', error);
       }
