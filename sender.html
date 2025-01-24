@@ -64,6 +64,8 @@
         if (event.candidate) {
           console.log("ICE candidate generated:", event.candidate);
           signalingServer.send(JSON.stringify({ iceCandidate: event.candidate }));
+        } else {
+          console.log("ICE candidate gathering completed.");
         }
       };
 
