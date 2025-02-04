@@ -17,12 +17,12 @@
 <body>
     <h1>Sender</h1>
     <div class="row">
-        <div class="col-6">
+        <div class="col-9">
             <div class="video">
                 <video id="senderVideo" autoplay playinline controls></video>        
             </div>
         </div>
-        <div class="col-6">
+        <div class="col-3">
             <div id="mediaConfiguration" class="d-block">
                 <div class="row g-3 align-items-center mb-2">
                     <div class="col-auto">
@@ -86,7 +86,7 @@
                         <select id="audioCodec" class="form-control">
                             <option value="">Select Audio Codec</option>
                             <option value="audio/opus" selected>OPUS</option>
-                            <option value="audio/PCMU">PCMU</option>
+                            <option value="audio/G722">G.722</option>
                         </select>
                     </div>
                 </div>
@@ -116,10 +116,7 @@
                     </div>
                 </div>
             </div>
-
-            <button class="btn btn-primary d-block" id="configure" onclick="openConfiguredCamera()">Configure</button>
-            <button class="btn btn-success d-none" id="connect" onclick="startCall()">Connect</button>
-            
+            <button class="btn btn-primary d-block" id="configure" onclick="initializeSetup()">Configure&Call</button>            
         </div>
     </div>
 </body>
